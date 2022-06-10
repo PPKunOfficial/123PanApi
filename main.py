@@ -41,91 +41,97 @@ print("这次使用的UA:", chrome_ua)
 
 reSession = requests.Session()
 
-class Pan123Api:
-    # 登录
-    def login(passport, password):
-        loginUrl = ApiUrl123[0]+"/user/sign_in"
-        loginData = {
-            "passport": passport,
-            "password": password
-        }
-        loginHeaders = {
-            "content-type": "application/json;charset=UTF-8",
-            "user-agent": chrome_ua
-        }
 
-        loginRes = reSession.post(
-            url=loginUrl, headers=loginHeaders, data=loginData).content.decode('utf-8')
-        return loginRes
+# 登录
+def login(passport, password):
+    loginUrl = ApiUrl123[0]+"/user/sign_in"
+    loginData = {
+        "passport": passport,
+        "password": password
+    }
+    loginHeaders = {
+        "content-type": "application/json;charset=UTF-8",
+        "user-agent": chrome_ua
+    }
 
-    # 创建验证数据
+    loginRes = reSession.post(
+        url=loginUrl, headers=loginHeaders, data=loginData).content.decode('utf-8')
+    return loginRes
 
-
-    def createAuthData(loginRes, userData):
-        loginDict = json.loads(loginRes)
-        global authorizationData, cookieData, afloginHeaders  # 全局变量
-        authorizationData = "Bearer "+loginDict["data"]["token"]
-        cookieData = {
-            "username": userData["passport"],
-            "nickName": userData["passport"],
-            "authorToken": loginDict["data"]["token"]
-        }
-        afloginHeaders = {
-            "content-type": "application/json;charset=UTF-8",
-            "authorization": authorizationData,
-            "user-agent": chrome_ua
-        }
-        return authorizationData,cookieData,afloginHeaders
-
-    # 获得用户状态
+# 创建验证数据
 
 
-    def getInfo():
-        infoUrl = ApiUrl123[0]+"/user/info"
-        infoRes = reSession.get(url=infoUrl, headers=afloginHeaders,
-                                cookies=cookieData).content.decode('utf-8')
-        return infoRes
+def createAuthData(loginRes, userData):
+    loginDict = json.loads(loginRes)
+    global authorizationData, cookieData, afloginHeaders  # 全局变量
+    authorizationData = "Bearer "+loginDict["data"]["token"]
+    cookieData = {
+        "username": userData["passport"],
+        "nickName": userData["passport"],
+        "authorToken": loginDict["data"]["token"]
+    }
+    afloginHeaders = {
+        "content-type": "application/json;charset=UTF-8",
+        "authorization": authorizationData,
+        "user-agent": chrome_ua
+    }
 
-    # 获得文件列表
-
-
-    def getDirInfo(searchData):
-        DirInfoUrl = ApiUrl123[1]+"/file/list/new?driveId="+searchData["driveId"]+"&limit="+searchData["limit"]+"&orderBy="+searchData["orderBy"] + \
-            "&orderDirection="+searchData["orderDir"]+"&parentFileId=" + \
-            searchData["parentFileId"]+"&trashed="+searchData["trashed"]
-        DirInfoRes = reSession.get(url=DirInfoUrl, headers=afloginHeaders,
-                                cookies=cookieData).content.decode('utf-8')
-        return DirInfoRes
-
-    # 获取文件md5
+# 获得用户状态
 
 
-    def getFileMD5(filePath):
-        with open(filePath, "rb") as f:
-            return hashlib.md5(f.read()).hexdigest()
-
-    # 上传请求
-
-
-    def reqUpload(fileDir):
-        upReqUrl = ApiUrl123[1]+"file/upload_request"
-        # 初始化上传参数
-        uploadReqUrl = ApiUrl123[1]+"file/upload_request"
-        uploadReqData = uploadInformation
-        uploadReqData["driveId"] = "0"
-        uploadReqData["duplicate"] = "0"
-        uploadReqData["fileName"] = os.path.basename(fileDir)
-        uploadReqData["parentFileId"] = "0"
-        uploadReqData["size"] = os.path.getsize(fileDir)
-        uploadReqData["type"] = "0"
-        uploadReqData["etag"] = getFileMD5(filePath=fileDir)
-
-        upRes = reSession.post(url=upReqUrl, data=uploadReqData, headers=afloginHeaders,
+def getInfo():
+    infoUrl = ApiUrl123[0]+"/user/info"
+    infoRes = reSession.get(url=infoUrl, headers=afloginHeaders,
                             cookies=cookieData).content.decode('utf-8')
-        return upRes
+    return infoRes
 
+<<<<<<< HEAD
 pan=Pan123Api()
 loginRes = pan.login(passport=userData["passport"], password=userData["password"])
 pan.createAuthData(loginRes=loginRes, userData=userData)
 print(loginRes)
 #print(pan.reqUpload(r"D:\Downloads\filebrowser.zip"))
+=======
+# 获得文件列表
+
+
+def getDirInfo(searchData):
+    DirInfoUrl = ApiUrl123[1]+"/file/list/new?driveId="+searchData["driveId"]+"&limit="+searchData["limit"]+"&orderBy="+searchData["orderBy"] + \
+        "&orderDirection="+searchData["orderDir"]+"&parentFileId=" + \
+        searchData["parentFileId"]+"&trashed="+searchData["trashed"]
+    DirInfoRes = reSession.get(url=DirInfoUrl, headers=afloginHeaders,
+                               cookies=cookieData).content.decode('utf-8')
+    return DirInfoRes
+
+# 获取文件md5
+
+
+def getFileMD5(filePath):
+    with open(filePath, "rb") as f:
+        return hashlib.md5(f.read()).hexdigest()
+
+# 上传请求
+
+
+def reqUpload(fileDir):
+    upReqUrl = ApiUrl123[1]+"file/upload_request"
+    # 初始化上传参数
+    uploadReqUrl = ApiUrl123[1]+"file/upload_request"
+    uploadReqData = uploadInformation
+    uploadReqData["driveId"] = "0"
+    uploadReqData["duplicate"] = "0"
+    uploadReqData["fileName"] = os.path.basename(fileDir)
+    uploadReqData["parentFileId"] = "0"
+    uploadReqData["size"] = os.path.getsize(fileDir)
+    uploadReqData["type"] = "0"
+    uploadReqData["etag"] = getFileMD5(filePath=fileDir)
+
+    upRes = reSession.post(url=upReqUrl, data=uploadReqData, headers=afloginHeaders,
+                           cookies=cookieData).content.decode('utf-8')
+    return upRes
+
+
+loginRes = login(passport=userData["passport"], password=userData["password"])
+createAuthData(loginRes=loginRes, userData=userData)
+print(reqUpload(r"D:\Downloads\filebrowser.zip"))
+>>>>>>> parent of bc4ea32 (合并commit)
