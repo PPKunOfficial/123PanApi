@@ -109,25 +109,6 @@ def getFileMD5(filePath):
 
 def reqUpload(fileDir):
     upReqUrl = ApiUrl123[1]+"file/upload_request"
-    """
-{
-	"code": 0,
-	"message": "ok",
-	"data": {
-		"AccessKeyId": "ZC6D4sERThhBGZYibt7",
-		"SecretAccessKey": "IO7X8K4Y1IRR0GZPLGKZSQ8BWXO2DOZHW8XIF8Z",
-		"SessionToken": "k8+CXpHtfpMIJ6+UwzMerngFN8c07Aasg9g4BTrmxBztpnX4hpAxcPqXO2A+H5rYfh3qo+4m67/Iwt2KxTY/NQyOo998hnQvGSRr6EZ35aikN8gcUAd0BTqf8Nx7MfQZN/QFKx+HhwA58ExmWbI7ZyLJfS6iMt4cXQDU6Dz0/L+OWlUVCtQfw9YrTYIJGeZmYiBrXb8I89fmfPdVc9D0RnN5o041wrX7mi+ZljMF6RB4MKeSu5e/yezyyXkor2pZZRjo7/Me8iVQIbtK4/Vjy1ZaDbECJr6ZdOrciyeQNVDsJ27u4RrSnLm+9duMii3RDR7k28W3YfmgmIiVmlSOmJR6kfXJTi4N0TZ7E1ZgzVU7x5JTNYpjEENgOo0TLPKtV9M2cmVqk/JPP43D8Fgb+C7+LUjkWfyRIvjYg4yNjr+2/oDkQvDv9ysnQMrJaFmKbS5BO8px72ohcsgTOywwA9oTDyC9qdvNL/sB1RavFvlGygjWp7qXMdpIsQkaVhInBoPiemXiOsv1eRGHM8arT7FN3wSCwHl1ngj2X4Mm8UjZJKcJB9nqWJiTY1oMxm/Ean7nLv6MPujKkq3MpLfOa6vh66+mbcVe6JbjG1Hns7U=",
-		"Expiration": "2022-06-10T16:53:58.209744851Z",
-		"Key": "6619ae3d/1811970423-0/6619ae3d106e79496705014e77377338",
-		"Bucket": "123-824",
-		"FileId": 28554494,
-		"Reuse": false,
-		"Info": null,
-		"UploadId": "2~XhJIs_Q1sLvDhQpvzoVfZafSg2_hET0",
-		"DownloadUrl": ""
-	}
-}
-    """
     uploadReqData = FileInformation
     uploadReqData["driveId"] = "0"
     uploadReqData["duplicate"] = "0"
@@ -146,15 +127,6 @@ def reqUpload(fileDir):
 
 def getUploadUrl(UploadInformation):
     upReqUrl = ApiUrl123[0]+"file/s3_list_upload_parts"
-    """
-{
-	"code": 0,
-	"message": "ok",
-	"data": {
-		"Parts": null
-	}
-}
-    """
     uploadData = {
         "bucket": UploadInformation["Bucket"],
         "key": UploadInformation["Key"],
@@ -171,24 +143,13 @@ def compileFileSize(FileSize):
     FileSizeInt = FileSize//10485760
     if FileSizeInt*10485760 != FileSize:
         FileSizeInt += 1
-    return FileSizeInt
+    return FileSizeInt,FileSize
 
 # 获得上传分段链接
 
 
 def repareUpload(UploadInformation, start,end):
     upRepareUrl = ApiUrl123[0]+"file/s3_repare_upload_parts_batch"
-    """
-{
-	"code": 0,
-	"message": "ok",
-	"data": {
-		"presignedUrls": {
-			"1": "https://file.123pan.com/123-824/6619ae3d/1811970423-0/6619ae3d106e79496705014e77377338?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=7JOMZG52GXC4KNYKCRUQ%2F20220610%2Fdefault%2Fs3%2Faws4_request&X-Amz-Date=20220610T163858Z&X-Amz-Expires=900&X-Amz-SignedHeaders=host&partNumber=1&uploadId=2~XhJIs_Q1sLvDhQpvzoVfZafSg2_hET0&x-id=UploadPart&X-Amz-Signature=92482015107177d492cca3c1e3fc3a807a572ac2f573e35e0d76b416bf7be310"
-		}
-	}
-}
-    """
     upRepareData = {
         "bucket": UploadInformation["Bucket"],
         "key": UploadInformation["Key"],
@@ -223,10 +184,18 @@ def completeUpload(UploadInformation):
                               cookies=cookieData).content.decode('utf-8')
     return json.loads(PartsRes)
 
+# 上传文件
+def putFile(url,fileDir,start,end):
+    f=open(fileDir,"rb")
+    f.seek(start)
+    partFileData=f.read(end)
+    requests.options(url)
+    requests.put(url,data=partFileData)
 
 loginRes = login(passport=userData["passport"], password=userData["password"])
 createAuthData(loginRes=loginRes, userData=userData)
-reqUploadRes = reqUpload(r"D:\Downloads\filebrowser.zip")
+fileDir=r"D:\Downloads\filebrowser.zip"
+reqUploadRes = reqUpload(fileDir)
 FileSize = reqUploadRes[1]
 
 if(hasCache(reqUploadRes[0]) == 1):
@@ -234,12 +203,22 @@ if(hasCache(reqUploadRes[0]) == 1):
 else:
     ReadyUploadInformation = getUploadUrl(reqUploadRes[0])
     getUploadUrl(ReadyUploadInformation)
-    partsCount=compileFileSize(FileSize)
-    downloadThreadList=[]
+    partsCount=compileFileSize(FileSize)[0]
     for i in range(1,partsCount+1,uploadSteps):
         reqRepare=repareUpload(reqUploadRes[0],i,partsCount+1)
-        partUrl=[]
+        downloadThreadList=[]
         for x in range(i,partsCount+1):
-            partUrl.append(reqRepare["data"]["presignedUrls"][str(x)])
+            upURL=reqRepare["data"]["presignedUrls"][str(x)]
+            startb=(i-1)*10485760
+            if i==int(partsCount)-1:
+                endb=compileFileSize(FileSize)[1]
+            else:
+                endb=i*10485760
+            t=threading.Thread(putFile,args=(upURL,fileDir,startb,endb,),name=str(x)+"_Thread")
+            t.start()
+            downloadThreadList.append(t)
+        for t in downloadThreadList:
+            t.join()
+    completeUpload(reqUploadRes[0])
         
 
