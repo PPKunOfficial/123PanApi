@@ -3,11 +3,12 @@ import requests
 import json
 import hashlib
 import os
+import sys
 from fake_useragent import UserAgent
 
 userData = {  # 账号密码
-    "passport": "",
-    "password": ""
+    "passport": sys.argv[0],
+    "password": sys.argv[1]
 }
 
 ApiUrl123 = [
@@ -126,4 +127,5 @@ class Pan123Api:
 pan=Pan123Api()
 loginRes = pan.login(passport=userData["passport"], password=userData["password"])
 pan.createAuthData(loginRes=loginRes, userData=userData)
-print(pan.reqUpload(r"D:\Downloads\filebrowser.zip"))
+print(loginRes)
+#print(pan.reqUpload(r"D:\Downloads\filebrowser.zip"))
