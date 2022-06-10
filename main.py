@@ -11,7 +11,7 @@ userData = {  # 账号密码
     "passport": sys.argv[1],
     "password": sys.argv[2]
 }
-
+uploadSteps=5
 ApiUrl123 = [
     "https://www.123pan.com/a/api/",
     "https://www.123pan.com/b/api/"
@@ -137,6 +137,20 @@ def compileFileSize(FileSize):
         FileSizeInt+=1
     return FileSizeInt
 
+# 获得上传分段链接
+def repareUpload(UploadInformation,FileSize,lastParts):
+    partsCount=compileFileSize(FileSize)
+    upRepareUrl = ApiUrl123[0]+"file/s3_repare_upload_parts_batch"
+    upRepareData={
+        "bucket":UploadInformation["Bucket"],
+        "key":UploadInformation["Key"],
+        "partNumberEnd":str(lastParts+uploadSteps),
+        "partNumberStart":lastParts,
+        "uploadId":UploadInformation["UploadId"]
+    }
+    PartsRes = reSession.post(url=upRepareUrl, data=upRepareData, headers=afloginHeaders,
+                           cookies=cookieData).content.decode('utf-8')
+    return json.loads(PartsRes)
 
 loginRes = login(passport=userData["passport"], password=userData["password"])
 createAuthData(loginRes=loginRes, userData=userData)
