@@ -1,3 +1,4 @@
+from distutils.command.upload import upload
 from http.cookiejar import Cookie
 import requests
 import json
@@ -7,15 +8,15 @@ import sys
 from fake_useragent import UserAgent
 
 userData = {  # 账号密码
-    "passport": sys.argv[0],
-    "password": sys.argv[1]
+    "passport": sys.argv[1],
+    "password": sys.argv[2]
 }
 
 ApiUrl123 = [
     "https://www.123pan.com/a/api/",
     "https://www.123pan.com/b/api/"
 ]
-uploadInformation = {
+FileInformation = {
     "driveId": "",  # 0 (疑问 文件夹id?
     "duplicate": "",  # 0 未知
     "etag": "",  # 文件md5
@@ -37,10 +38,9 @@ searchData = {
 
 # 随机UserAgent
 chrome_ua = UserAgent().chrome
-print("这次使用的UA:", chrome_ua)
 
 reSession = requests.Session()
-
+reSession.trust_env=False # 禁止信任环境变量
 
 # 登录
 def login(passport, password):
@@ -55,7 +55,7 @@ def login(passport, password):
     }
 
     loginRes = reSession.post(
-        url=loginUrl, headers=loginHeaders, data=loginData).content.decode('utf-8')
+        url=loginUrl, headers=loginHeaders, data=loginData).content.decode("utf-8")
     return loginRes
 
 # 创建验证数据
@@ -67,7 +67,6 @@ def createAuthData(loginRes, userData):
     authorizationData = "Bearer "+loginDict["data"]["token"]
     cookieData = {
         "username": userData["passport"],
-        "nickName": userData["passport"],
         "authorToken": loginDict["data"]["token"]
     }
     afloginHeaders = {
@@ -102,13 +101,11 @@ def getFileMD5(filePath):
         return hashlib.md5(f.read()).hexdigest()
 
 # 上传请求
-
-
 def reqUpload(fileDir):
     upReqUrl = ApiUrl123[1]+"file/upload_request"
     # 初始化上传参数
     uploadReqUrl = ApiUrl123[1]+"file/upload_request"
-    uploadReqData = uploadInformation
+    uploadReqData = FileInformation
     uploadReqData["driveId"] = "0"
     uploadReqData["duplicate"] = "0"
     uploadReqData["fileName"] = os.path.basename(fileDir)
@@ -119,9 +116,31 @@ def reqUpload(fileDir):
 
     upRes = reSession.post(url=upReqUrl, data=uploadReqData, headers=afloginHeaders,
                            cookies=cookieData).content.decode('utf-8')
-    return upRes
+    return json.loads(upRes),uploadReqData["size"]
+
+# 上传分段准备
+def getUploadUrl(UploadInformation):
+    upReqUrl = ApiUrl123[0]+"file/s3_list_upload_parts"
+    uploadData={
+        "bucket":UploadInformation["Bucket"],
+        "key":UploadInformation["Key"],
+        "uploadId":UploadInformation["UploadId"]
+    }
+    PartsRes = reSession.post(url=upReqUrl, data=uploadData, headers=afloginHeaders,
+                           cookies=cookieData).content.decode('utf-8')
+    return json.loads(PartsRes)
+
+# 计算文件分段 一次put只上传10M即10485760字节
+def compileFileSize(FileSize):
+    FileSizeInt=FileSize//10485760
+    if FileSizeInt*10485760!=FileSize:
+        FileSizeInt+=1
+    return FileSizeInt
 
 
 loginRes = login(passport=userData["passport"], password=userData["password"])
 createAuthData(loginRes=loginRes, userData=userData)
-#rint(reqUpload(r"D:\Downloads\filebrowser.zip"))
+reqUploadRes=reqUpload(r"D:\Downloads\filebrowser.zip")
+FileSize=reqUploadRes[1]
+ReadyUploadInformation=getUploadUrl(reqUploadRes[0])
+getUploadUrl(ReadyUploadInformation)
