@@ -85,15 +85,6 @@ def getInfo():
                             cookies=cookieData).content.decode('utf-8')
     return infoRes
 
-<<<<<<< HEAD
-pan=Pan123Api()
-loginRes = pan.login(passport=userData["passport"], password=userData["password"])
-pan.createAuthData(loginRes=loginRes, userData=userData)
-print(loginRes)
-#print(pan.reqUpload(r"D:\Downloads\filebrowser.zip"))
-=======
-# 获得文件列表
-
 
 def getDirInfo(searchData):
     DirInfoUrl = ApiUrl123[1]+"/file/list/new?driveId="+searchData["driveId"]+"&limit="+searchData["limit"]+"&orderBy="+searchData["orderBy"] + \
@@ -133,5 +124,4 @@ def reqUpload(fileDir):
 
 loginRes = login(passport=userData["passport"], password=userData["password"])
 createAuthData(loginRes=loginRes, userData=userData)
-print(reqUpload(r"D:\Downloads\filebrowser.zip"))
->>>>>>> parent of bc4ea32 (合并commit)
+#rint(reqUpload(r"D:\Downloads\filebrowser.zip"))
