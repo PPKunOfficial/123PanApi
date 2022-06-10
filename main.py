@@ -128,9 +128,9 @@ def reqUpload(fileDir):
 def getUploadUrl(UploadInformation):
     upReqUrl = ApiUrl123[0]+"file/s3_list_upload_parts"
     uploadData = {
-        "bucket": UploadInformation["Bucket"],
-        "key": UploadInformation["Key"],
-        "uploadId": UploadInformation["UploadId"]
+        "bucket": UploadInformation["data"]["Bucket"],
+        "key": UploadInformation["data"]["Key"],
+        "uploadId": UploadInformation["data"]["UploadId"]
     }
     PartsRes = reSession.post(url=upReqUrl, data=uploadData, headers=afloginHeaders,
                               cookies=cookieData).content.decode('utf-8')
@@ -151,11 +151,11 @@ def compileFileSize(FileSize):
 def repareUpload(UploadInformation, start,end):
     upRepareUrl = ApiUrl123[0]+"file/s3_repare_upload_parts_batch"
     upRepareData = {
-        "bucket": UploadInformation["Bucket"],
-        "key": UploadInformation["Key"],
+        "bucket": UploadInformation["data"]["Bucket"],
+        "key": UploadInformation["data"]["Key"],
         "partNumberEnd": end,
         "partNumberStart": start,
-        "uploadId": UploadInformation["UploadId"]
+        "uploadId": UploadInformation["data"]["UploadId"]
     }
     PartsRes = reSession.post(url=upRepareUrl, data=upRepareData, headers=afloginHeaders,
                               cookies=cookieData).content.decode('utf-8')
@@ -176,9 +176,9 @@ def hasCache(UploadInformation):
 def completeUpload(UploadInformation):
     upRepareUrl = ApiUrl123[0]+"file/s3_complete_multipart_upload"
     upRepareData = {
-        "bucket": UploadInformation["Bucket"],
-        "key": UploadInformation["Key"],
-        "uploadId": UploadInformation["UploadId"]
+        "bucket": UploadInformation["data"]["Bucket"],
+        "key": UploadInformation["data"]["Key"],
+        "uploadId": UploadInformation["data"]["UploadId"]
     }
     PartsRes = reSession.post(url=upRepareUrl, data=upRepareData, headers=afloginHeaders,
                               cookies=cookieData).content.decode('utf-8')
@@ -189,20 +189,18 @@ def putFile(url,fileDir,start,end):
     f=open(fileDir,"rb")
     f.seek(start)
     partFileData=f.read(end)
-    requests.options(url)
-    requests.put(url,data=partFileData)
+    reSession.options(url)
+    reSession.put(url,data=partFileData)
 
 loginRes = login(passport=userData["passport"], password=userData["password"])
 createAuthData(loginRes=loginRes, userData=userData)
-fileDir=r"D:\Downloads\filebrowser.zip"
+fileDir=r"D:\Downloads\【初音ミク】 細菌汚染 - Bacterial Contamination - 【3DPV】#骸音シーエ #シーエ @calciu_bot.mp4"
 reqUploadRes = reqUpload(fileDir)
 FileSize = reqUploadRes[1]
-
 if(hasCache(reqUploadRes[0]) == 1):
     print("云端有缓存")
 else:
     ReadyUploadInformation = getUploadUrl(reqUploadRes[0])
-    getUploadUrl(ReadyUploadInformation)
     partsCount=compileFileSize(FileSize)[0]
     for i in range(1,partsCount+1,uploadSteps):
         reqRepare=repareUpload(reqUploadRes[0],i,partsCount+1)
@@ -214,7 +212,8 @@ else:
                 endb=compileFileSize(FileSize)[1]
             else:
                 endb=i*10485760
-            t=threading.Thread(putFile,args=(upURL,fileDir,startb,endb,),name=str(x)+"_Thread")
+            tname=str(x)+"_Thread"
+            t=threading.Thread(target=putFile,args=(upURL,fileDir,startb,endb,),name=tname)
             t.start()
             downloadThreadList.append(t)
         for t in downloadThreadList:
