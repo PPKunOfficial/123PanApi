@@ -37,7 +37,7 @@ searchData = {
     "parentFileId": "0",
     "trashed": "false"
 }
-
+cutSize=10485760
 # 随机UserAgent
 chrome_ua = UserAgent().chrome
 
@@ -139,9 +139,10 @@ def getUploadUrl(UploadInformation):
 # 计算文件分段 一次put只上传10M即10485760字节
 
 
-def compileFileSize(FileSize):
-    FileSizeInt = FileSize//10485760
-    if FileSizeInt*10485760 != FileSize:
+def compileFileSize(FileDir,cutSize=10485760):
+    FileSize=os.path.getsize(FileDir)
+    FileSizeInt = FileSize//cutSize
+    if FileSizeInt%cutSize != 0:
         FileSizeInt += 1
     return FileSizeInt,FileSize
 
@@ -185,12 +186,17 @@ def completeUpload(UploadInformation):
     return json.loads(PartsRes)
 
 # 上传文件
-def putFile(url,fileDir,start,end):
+def putFile(url,fileDir,parts,cutSize=10485760):
+    start=(parts)*cutSize
     f=open(fileDir,"rb")
     f.seek(start)
-    partFileData=f.read(end)
+    partFileData=f.read(cutSize)
     reSession.options(url)
-    reSession.put(url,data=partFileData)
+    headers={
+        "User-Agent":chrome_ua,
+        "Content-Length":str(cutSize)
+    }
+    reSession.put(url,data=partFileData,headers=headers)
 
 loginRes = login(passport=userData["passport"], password=userData["password"])
 createAuthData(loginRes=loginRes, userData=userData)
@@ -201,19 +207,17 @@ if(hasCache(reqUploadRes[0]) == 1):
     print("云端有缓存")
 else:
     ReadyUploadInformation = getUploadUrl(reqUploadRes[0])
-    partsCount=compileFileSize(FileSize)[0]
-    for i in range(1,partsCount+1,uploadSteps):
+    partsCount=compileFileSize(fileDir)[0]
+    for i in range(0,compileFileSize(fileDir)[0],uploadSteps):
         reqRepare=repareUpload(reqUploadRes[0],i,partsCount+1)
         downloadThreadList=[]
-        for x in range(i,partsCount+1):
+        for x in range(i,partsCount):
             upURL=reqRepare["data"]["presignedUrls"][str(x)]
-            startb=(i-1)*10485760
-            if i==int(partsCount)-1:
-                endb=compileFileSize(FileSize)[1]
-            else:
-                endb=i*10485760
             tname=str(x)+"_Thread"
-            t=threading.Thread(target=putFile,args=(upURL,fileDir,startb,endb,),name=tname)
+            if FileSize<100485760:
+                t=threading.Thread(target=putFile,args=(upURL,fileDir,x,),name=tname)
+            else:
+                t=threading.Thread(target=putFile,args=(upURL,fileDir,x,FileSize,),name=tname)
             t.start()
             downloadThreadList.append(t)
         for t in downloadThreadList:
