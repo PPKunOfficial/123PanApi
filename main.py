@@ -200,7 +200,7 @@ def putFile(url,fileDir,parts,cutSize=10485760):
 
 loginRes = login(passport=userData["passport"], password=userData["password"])
 createAuthData(loginRes=loginRes, userData=userData)
-fileDir=r"D:\Downloads\【初音ミク】 細菌汚染 - Bacterial Contamination - 【3DPV】#骸音シーエ #シーエ @calciu_bot.mp4"
+fileDir=r""
 reqUploadRes = reqUpload(fileDir)
 FileSize = reqUploadRes[1]
 if(hasCache(reqUploadRes[0]) == 1):
