@@ -14,8 +14,8 @@ reSession=requests.Session()
 loginRes = puser.login(username=userData["username"], password=userData["password"],reSession=reSession)
 authorizationData, cookieData, afloginHeaders=puser.createAuthData(loginRes=loginRes, userData=userData)
 log.i(loginRes)
-
-fileDir=r""
+import sys
+fileDir=sys.argv[3]
 reqUploadRes = pupload.askUpload(reSession,cookieData,afloginHeaders,fileDir)
 fileInformation = reqUploadRes[1]
 uploadInformation=reqUploadRes[0]
