@@ -15,7 +15,7 @@ loginRes = puser.login(username=userData["username"], password=userData["passwor
 authorizationData, cookieData, afloginHeaders=puser.createAuthData(loginRes=loginRes, userData=userData)
 log.i(loginRes)
 
-fileDir=r"E:\repo\123pan\rubbish.file"
+fileDir=r""
 reqUploadRes = pupload.askUpload(reSession,cookieData,afloginHeaders,fileDir)
 fileInformation = reqUploadRes[1]
 uploadInformation=reqUploadRes[0]
